@@ -193,6 +193,7 @@ func gen_color(i, j int, c *[max_x][max_y]uint8, conf *Configuration) uint8 {
 	small_dist := conf.SmallDist
 	color_walk := conf.ColorWalk
 	odds := conf.Odds
+
 	if c[i][j] == 0 {
 		chance := rand.Intn(999)
 		var color uint8
@@ -235,15 +236,18 @@ func gen_color(i, j int, c *[max_x][max_y]uint8, conf *Configuration) uint8 {
 
 		c[i][j] = color
 
-		if conf.Mirror == 2 {
+		if Abs(conf.Mirror) == 2 {
 			var new_i int
 			half_x := max_x / 2
 
-			if i < half_x { new_i = max_x - i } else if i > half_x { new_i = i - (half_x - i) } else { new_i = 0}
+			if i < half_x { new_i = max_x - i } else if i > half_x { new_i = max_x - i } else { new_i = 0}
 
 			if new_i >= 0 && new_i < max_x && c[new_i][j] == 0 && color > 0 {
-				//c[new_i][j] = 255 % color
-				c[new_i][j] = (color + 128) % 255
+				if (conf.Mirror > 0) { 
+					c[new_i][j] = color
+				} else { 
+					c[new_i][j] = (color + 128) % 255
+				}
 			}
 		} else if conf.Nup == 2 {
 			var new_i int
@@ -278,6 +282,7 @@ type Configuration struct {
 	Attractors int	`json:"attractors"`
 	Mirror 	int	`json:"mirror"`
 	Nup int	`json:"nup"`
+	Seed int64 `json:"seed"`
 }
 
 type Odds map[string]int 
@@ -320,13 +325,21 @@ type Point struct {
 
 var attractors []Point
 
+func getSeed(conf Configuration) int64 {
+	if conf.Seed != 0 { return conf.Seed }
+	return time.Now().UTC().UnixNano()
+}
+
 func main() {
 	var r [max_x][max_y]uint8
 	var g [max_x][max_y]uint8
 	var b [max_x][max_y]uint8
-	rand.Seed( time.Now().UTC().UnixNano())
+	
 	conf := getconf("./conf.json")
 	attractors = genAttractors(conf.Attractors)
+	
+	seed := getSeed(conf)
+	rand.Seed(seed) 
 
 	m := image.NewNRGBA(image.Rect(0, 0, max_x, max_y))
 	m_r := image.NewNRGBA(image.Rect(0, 0, max_x, max_y))
@@ -346,14 +359,24 @@ func main() {
 		   }
 	   }
 
-	fmt.Println("Writing composite")
+	filename := fmt.Sprintf("%v_%v_%v_%v_%v-%v.png", 
+		conf.BigDist,
+		conf.SmallDist,
+		conf.ColorWalk,
+		conf.Attractors,
+		conf.Mirror,
+		seed)
+
+	fmt.Println("Writing composite view")
 	write_image("test.png", m)
+	fmt.Println("Writing composite")
+	write_image("output/" + filename, m)
 	fmt.Println("Writing red")
-	write_image("test_red.png", m_r)
+	write_image("output/red-" + filename, m_r)
 	fmt.Println("Writing green")
-	write_image("test_green.png", m_g)
+	write_image("output/green-" + filename, m_g)
 	fmt.Println("Writing blue")
-	write_image("test_blue.png", m_b)
+	write_image("output/blue-" + filename, m_b)
 
 	fmt.Println("done")
 
