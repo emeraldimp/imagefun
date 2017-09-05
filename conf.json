@@ -1,0 +1,12 @@
+{
+	"big_dist": 20,
+	"small_dist": 15,
+	"color_walk": 0,
+	"attractors": 75,
+	"mirror": 1,
+	"nup": 1,
+	"odds": {
+		"isotropic_walk": 50
+	},
+	"seed": 978520
+}
