@@ -255,6 +255,11 @@ func main() {
 	m_r := image.NewNRGBA(image.Rect(0, 0, max_x, max_y))
 	m_g := image.NewNRGBA(image.Rect(0, 0, max_x, max_y))
 	m_b := image.NewNRGBA(image.Rect(0, 0, max_x, max_y))
+
+	m_rg := image.NewNRGBA(image.Rect(0, 0, max_x, max_y))
+	m_rb := image.NewNRGBA(image.Rect(0, 0, max_x, max_y))
+	m_gb := image.NewNRGBA(image.Rect(0, 0, max_x, max_y))
+
 	for y := 0; y < max_y; y++ {
 		for x := 0; x < max_x; x++ {
 			v_red := color_gen(x, y, base_color, &r, &conf, &attractors)
@@ -266,6 +271,10 @@ func main() {
 			setPix(m_r, i, v_red, 0, 0)
 			setPix(m_g, i, 0, v_green, 0)
 			setPix(m_b, i, 0, 0, v_blue)
+
+			setPix(m_rg, i, v_red, v_green, 0)
+			setPix(m_rb, i, v_red, 0, v_blue)
+			setPix(m_gb, i, 0, v_green, v_blue)
 		}
 	}
 
@@ -285,11 +294,18 @@ func main() {
 	fmt.Println("Writing composite")
 	write_image("output/" + filename + ".png", m)
 	fmt.Println("Writing red")
-	write_image("output/red-" + filename+ ".png", m_r)
+	write_image("output/" + filename+ "-red.png", m_r)
 	fmt.Println("Writing green")
-	write_image("output/green-" + filename+ ".png", m_g)
+	write_image("output/" + filename+ "-green.png", m_g)
 	fmt.Println("Writing blue")
-	write_image("output/blue-" + filename+ ".png", m_b)
+	write_image("output/" + filename+ "-blue.png", m_b)
+
+	fmt.Println("Writing red-green")
+	write_image("output/" + filename+ "-red-green.png", m_rg)
+	fmt.Println("Writing red-blue")
+	write_image("output/" + filename+ "-red-blue.png", m_rb)
+	fmt.Println("Writing green-blue")
+	write_image("output/" + filename+ "-green-blue.png", m_gb)
 
 	fmt.Println(filename)
 
