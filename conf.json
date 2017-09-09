@@ -1,12 +1,20 @@
 {
-	"big_dist": 20,
-	"small_dist": 15,
-	"color_walk": 0,
-	"attractors": 75,
-	"mirror": 1,
-	"nup": 1,
+	"big_dist": 6,
+	"small_dist": 2,
+	"color_walk": 1,
+	"attractors": 0,
+	"mirror": 0,
+	"nup": 2,
 	"odds": {
-		"isotropic_walk": 50
+		"isotropic_walk": 500,
+		"color_no_walk": 60
 	},
-	"seed": 978520
+	"twist": 0,
+	"kite": {
+		"x": 2,
+		"y": 2
+	},
+	"color_gen": "kite",
+	"apply_multiplier": false,
+	"seed": 1504934856816322116
 }
