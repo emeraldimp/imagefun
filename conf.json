@@ -1,20 +1,23 @@
 {
-	"big_dist": 6,
+	"big_dist": 50,
 	"small_dist": 2,
 	"color_walk": 1,
-	"attractors": 5,
+	"attractors": 7,
 	"mirror": 0,
-	"nup": 2,
+	"nup": 0,
 	"odds": {
-		"isotropic_walk": 500,
-		"color_no_walk": 60
+		"big_walk": 100,
+		"color_no_walk": 75
 	},
-	"twist": 0,
 	"kite": {
 		"x": 2,
 		"y": 2
 	},
+    "walks": {
+      "big": "random",
+      "small": "center_isotropic"
+    },
 	"color_gen": "kite",
-	"apply_multiplier": false,
+	"apply_multiplier": true,
 	"seed": 0
 }

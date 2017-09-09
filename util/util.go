@@ -23,11 +23,11 @@ type Configuration struct {
 	Attractors int	`json:"attractors"`
 	Mirror 	int	`json:"mirror"`
 	Nup int	`json:"nup"`
-	Twist int	`json:"twist"`
 	KiteRange Range	`json:"kite"`
 	Seed int64 `json:"seed"`
 	ColorGen string `json:"color_gen"`
 	ApplyMultiplier bool `json:"apply_multiplier"`
+	Walks map[string]string `json:"walks"`
 }
 
 type Odds map[string]int
