@@ -11,10 +11,12 @@ import (
 	"imagefun/walks"
 	"imagefun/util"
 	"strings"
+	"github.com/lucasb-eyer/go-colorful"
+	//"image/color"
 )
 
-const max_x = util.Max_x
-const max_y = util.Max_y
+const max_x = util.MaxX
+const max_y = util.MaxY
 
 func gen_color_kite(i, j int, in_color uint8, c *[max_x][max_y]uint8, conf *util.Configuration, attractors *[]util.Point) uint8 {
 	big_dist := conf.BigDist
@@ -257,6 +259,26 @@ func genAttractors(num int) []util.Point {
 }
 
 
+func getRgb(x,y int, r, g, b *[max_x][max_y]uint8, setup util.RgbSetup) colorful.Color {
+	vRed := setup.ColorGen(x, y, setup.BaseColor, r, setup.Conf, setup.Attractors)
+	vGreen := setup.ColorGen(x, y, setup.BaseColor, g, setup.Conf, setup.Attractors)
+	vBlue := setup.ColorGen(x, y, setup.BaseColor, b, setup.Conf, setup.Attractors)
+	return colorful.Color{float64(vRed)/255.0, float64(vGreen)/255.0, float64(vBlue)/255.0}
+}
+
+func getHcl(x,y int, h, c, l *[max_x][max_y]uint8, setup util.RgbSetup) colorful.Color {
+
+	hue := setup.ColorGen(x, y, setup.BaseColor, h, setup.Conf, setup.Attractors)
+	chroma := setup.ColorGen(x, y, setup.BaseColor, c, setup.Conf, setup.Attractors)
+	lightness := setup.ColorGen(x, y, setup.BaseColor, l, setup.Conf, setup.Attractors)
+
+	if lightness > 0 && lightness < 128 {
+		lightness += uint8(rand.Intn(int(lightness)))
+	}
+
+	return colorful.Hcl(360 * float64(hue) / 255, (float64(chroma) / 128) -1, float64(lightness)/255.0)
+}
+
 func main() {
 	var r [max_x][max_y]uint8
 	var g [max_x][max_y]uint8
@@ -268,8 +290,14 @@ func main() {
 	conf.Seed = util.GetSeed(conf)
 	rand.Seed(conf.Seed)
 
-	color_gen := get_color_gen_func(conf)
-	base_color := rcolor(255)
+	setup := util.RgbSetup{
+		BaseColor:  rcolor(255),
+		ColorGen:   get_color_gen_func(conf),
+		Conf:       &conf,
+		Attractors: &attractors,
+	}
+
+	getColorFunc := determineColorSpaceFunc(conf.ColorSpace)
 
 	m := image.NewNRGBA(image.Rect(0, 0, max_x, max_y))
 	m_r := image.NewNRGBA(image.Rect(0, 0, max_x, max_y))
@@ -282,9 +310,10 @@ func main() {
 
 	for y := 0; y < max_y; y++ {
 		for x := 0; x < max_x; x++ {
-			v_red := color_gen(x, y, base_color, &r, &conf, &attractors)
-			v_green := color_gen(x, y, base_color, &g, &conf, &attractors)
-			v_blue := color_gen(x, y, base_color, &b, &conf, &attractors)
+
+			rgb := getColorFunc(x, y, &r, &g, &b, setup)
+			v_red, v_green, v_blue := rgb.Clamped().RGB255()
+
 			i := y*m.Stride + x*4
 
 			setPix(m, i, v_red, v_green, v_blue)
@@ -298,13 +327,16 @@ func main() {
 		}
 	}
 
-	filename := fmt.Sprintf("%v_%v_%v_%v_%v-%v",
+	filename := fmt.Sprintf("%v_%v_%v_%v_%v-%v-%v-%vx%v",
 		conf.BigDist,
 		conf.SmallDist,
 		conf.ColorWalk,
 		conf.Attractors,
 		conf.Mirror,
-		conf.Seed)
+		conf.Seed,
+		conf.ColorSpace,
+		max_x,
+		max_y)
 
 	fmt.Println("Writing config")
 	write_config("output/"+filename+".json", conf)
@@ -330,7 +362,15 @@ func main() {
 
 	fmt.Println("done")
 }
-func get_color_gen_func(conf util.Configuration) func(int, int, uint8, *[1024][1024]uint8, *util.Configuration, *[]util.Point) uint8 {
+
+func determineColorSpaceFunc(colorSpace string) func (x,y int, r, g, b *[max_x][max_y]uint8, setup util.RgbSetup) colorful.Color {
+	if colorSpace == "hcl" {
+		return getHcl
+	}
+	return getRgb
+}
+
+func get_color_gen_func(conf util.Configuration) func(int, int, uint8, *[max_x][max_y]uint8, *util.Configuration, *[]util.Point) uint8 {
 	var color_gen func(int, int, uint8, *[max_x][max_y]uint8, *util.Configuration, *[]util.Point) uint8
 	if (conf.ColorGen == "kite") {
 		color_gen = gen_color_kite

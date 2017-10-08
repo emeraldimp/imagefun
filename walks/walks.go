@@ -5,8 +5,8 @@ import (
 	"imagefun/util"
 )
 
-const max_x = util.Max_x
-const max_y = util.Max_y
+const max_x = util.MaxX
+const max_y = util.MaxY
 
 
 func Random(walk util.Walk) (int, int, int) {

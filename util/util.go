@@ -7,8 +7,11 @@ import (
 )
 
 
-const Max_x = 1024
-const Max_y = 1024
+//const MaxX = 1024
+//const MaxY = 1024
+
+const MaxX = 1920
+const MaxY = 1080
 
 type Point struct {
 	X int
@@ -26,6 +29,7 @@ type Configuration struct {
 	KiteRange Range	`json:"kite"`
 	Seed int64 `json:"seed"`
 	ColorGen string `json:"color_gen"`
+	ColorSpace string `json:"color_space"`
 	ApplyMultiplier bool `json:"apply_multiplier"`
 	Walks map[string]string `json:"walks"`
 }
@@ -39,6 +43,13 @@ type Walk struct {
 	J int
 	Dist int
 	Attractors []Point
+}
+
+type RgbSetup struct {
+	BaseColor  uint8
+	ColorGen   func(int, int, uint8, *[MaxX][MaxY]uint8, *Configuration, *[]Point) uint8
+	Conf       *Configuration
+	Attractors *[]Point
 }
 
 func Locrand(n int) int {
