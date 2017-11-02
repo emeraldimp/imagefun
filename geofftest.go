@@ -18,7 +18,7 @@ import (
 const max_x = util.MaxX
 const max_y = util.MaxY
 
-func gen_color_kite(i, j int, in_color uint8, c *[max_x][max_y]uint8, conf *util.Configuration, attractors *[]util.Point) uint8 {
+func gen_color_kite(i, j int, dim_min, dim_max float64, apply_multiplier bool, c *[max_x][max_y]float64, conf *util.Configuration, attractors *[]util.Point) float64 {
 	big_dist := conf.BigDist
 	small_dist := conf.SmallDist
 	color_walk := conf.ColorWalk
@@ -33,7 +33,7 @@ func gen_color_kite(i, j int, in_color uint8, c *[max_x][max_y]uint8, conf *util
 	chance := rand.Intn(999)
 
 	if chance == 0 {
-		return rcolor(255)
+		return rcolorf64(dim_min, dim_max)
 	}
 
 	var dist int
@@ -54,11 +54,27 @@ func gen_color_kite(i, j int, in_color uint8, c *[max_x][max_y]uint8, conf *util
 	}
 	new_x, new_y, attr_dist := walk(walkParams)
 
-	color_multiplier := get_color_multiplier(conf, attr_dist)
+	color_multiplier := 1.0
+
+	if apply_multiplier {
+		color_multiplier = get_color_multiplier(conf, attr_dist)
+	}
 
 	color_walk_value := rand_color_walk(color_walk, odds) * color_multiplier
 
-	color := (gen_color_kite(new_x, new_y, in_color, c, conf, attractors) + color_walk_value) % 255
+	if !apply_multiplier {
+		color_walk_value = 0
+	}
+
+	//color := (gen_color_kite(new_x, new_y, in_color, c, conf, attractors) + color_walk_value) % 255
+	color := gen_color_kite(new_x, new_y, dim_min, dim_max, apply_multiplier, c, conf, attractors) + color_walk_value
+
+	for color > dim_max {
+		color -= dim_max
+	}
+	for color < dim_min {
+		color += dim_min
+	}
 
 	x_range := conf.KiteRange["x"]
 	y_range := conf.KiteRange["y"]
@@ -95,8 +111,9 @@ func gen_color_kite(i, j int, in_color uint8, c *[max_x][max_y]uint8, conf *util
 
 	return color
 }
-func get_color_multiplier(conf *util.Configuration, attr_dist int) uint8 {
-	var color_multiplier uint8
+
+func get_color_multiplier(conf *util.Configuration, attr_dist int) float64 {
+	var color_multiplier float64
 	if !conf.ApplyMultiplier || attr_dist == -1 || attr_dist > 200 {
 		color_multiplier = 1
 	} else if attr_dist < 50 {
@@ -109,7 +126,7 @@ func get_color_multiplier(conf *util.Configuration, attr_dist int) uint8 {
 	return color_multiplier
 }
 
-func gen_color(i, j int, in_color uint8, c *[max_x][max_y]uint8, conf *util.Configuration, attractors *[]util.Point) uint8 {
+func gen_color(i, j int, dim_min, dim_max float64, apply_multiplier bool, c *[max_x][max_y]float64, conf *util.Configuration, attractors *[]util.Point) float64 {
 	big_dist := conf.BigDist
 	small_dist := conf.SmallDist
 	color_walk := conf.ColorWalk
@@ -117,7 +134,7 @@ func gen_color(i, j int, in_color uint8, c *[max_x][max_y]uint8, conf *util.Conf
 
 	if c[i][j] == 0 {
 		chance := rand.Intn(999)
-		var color uint8
+		var color float64
 		if chance != 0 {
 			var walk func(util.Walk) (int, int, int)
 			var dist int
@@ -137,14 +154,32 @@ func gen_color(i, j int, in_color uint8, c *[max_x][max_y]uint8, conf *util.Conf
 			}
 			new_x, new_y, attr_dist := walk(walkParams)
 			if new_x == i && new_y == j {
-				color = rcolor(256)
+				color = rcolorf64(dim_min, dim_max)
 			} else {
-				color_multiplier := get_color_multiplier(conf, attr_dist)
+				color_multiplier := 1.0
 
-				color = (gen_color(new_x, new_y, in_color, c, conf, attractors) + (rand_color_walk(color_walk, odds) * color_multiplier  ) ) % 255
+				if apply_multiplier == true	{
+					color_multiplier = get_color_multiplier(conf, attr_dist)
+				}
+
+				if apply_multiplier == true {
+					color = gen_color(new_x, new_y, dim_min, dim_max, apply_multiplier, c, conf, attractors) + (rand_color_walk(color_walk, odds) * color_multiplier  )
+				} else {
+					color = gen_color(new_x, new_y, dim_min, dim_max, apply_multiplier, c, conf, attractors)
+				}
+
+				for color > dim_max {
+					color -= dim_max
+				}
+				for color < dim_min {
+					color += dim_min
+				}
+
+
+				//color = (gen_color(new_x, new_y, in_color, c, conf, attractors) + (rand_color_walk(color_walk, odds) * color_multiplier  ) ) % 255
 			}
 		} else {
-			color = rcolor(256)
+			color = rcolorf64(dim_min, dim_max)
 		}
 
 		c[i][j] = color
@@ -178,13 +213,15 @@ func get_walk(walk_type string, conf *util.Configuration) (func(util.Walk)(int,i
 			return walks.Random_attractor_neighbor_walk
 		case "random_attractor_neighbor_twist":
 			return walks.Random_attractor_neighbor_twist
+		case "isotropic_attractor_neighbor":
+			return walks.Isotropic_attractor_neighbor_walk
 		}
 	}
 
 	return walks.Isotropic
 }
 
-func apply_nup(i, j int, c *[max_x][max_y]uint8, color uint8) {
+func apply_nup(i, j int, c *[max_x][max_y]float64, color float64) {
 	var new_i int
 	half_x := max_x / 2
 	if i > half_x {
@@ -196,7 +233,7 @@ func apply_nup(i, j int, c *[max_x][max_y]uint8, color uint8) {
 		c[new_i][j] = color
 	}
 }
-func apply_mirror(i, j int, c *[max_x][max_y]uint8, color uint8, conf *util.Configuration) {
+func apply_mirror(i, j int, c *[max_x][max_y]float64, color float64, conf *util.Configuration) {
 	var new_i int
 	half_x := max_x / 2
 	if i < half_x {
@@ -210,7 +247,7 @@ func apply_mirror(i, j int, c *[max_x][max_y]uint8, color uint8, conf *util.Conf
 		if conf.Mirror > 0 {
 			c[new_i][j] = color
 		} else {
-			c[new_i][j] = (color + 128) % 255
+			c[new_i][j] =float64((uint8(color) + 128) % 255)
 		}
 	}
 }
@@ -259,30 +296,26 @@ func genAttractors(num int) []util.Point {
 }
 
 
-func getRgb(x,y int, r, g, b *[max_x][max_y]uint8, setup util.RgbSetup) colorful.Color {
-	vRed := setup.ColorGen(x, y, setup.BaseColor, r, setup.Conf, setup.Attractors)
-	vGreen := setup.ColorGen(x, y, setup.BaseColor, g, setup.Conf, setup.Attractors)
-	vBlue := setup.ColorGen(x, y, setup.BaseColor, b, setup.Conf, setup.Attractors)
-	return colorful.Color{float64(vRed)/255.0, float64(vGreen)/255.0, float64(vBlue)/255.0}
+func getRgb(x,y int, r, g, b *[max_x][max_y]float64, setup util.RgbSetup) colorful.Color {
+	vRed := setup.ColorGen(x, y, 0, 255, true, r, setup.Conf, setup.Attractors)
+	vGreen := setup.ColorGen(x, y, 0, 255, true, g, setup.Conf, setup.Attractors)
+	vBlue := setup.ColorGen(x, y, 0, 255, true, b, setup.Conf, setup.Attractors)
+	return colorful.Color{vRed/255.0, vGreen/255.0, vBlue/255.0}
 }
 
-func getHcl(x,y int, h, c, l *[max_x][max_y]uint8, setup util.RgbSetup) colorful.Color {
+func getHcl(x,y int, h, c, l *[max_x][max_y]float64, setup util.RgbSetup) colorful.Color {
 
-	hue := setup.ColorGen(x, y, setup.BaseColor, h, setup.Conf, setup.Attractors)
-	chroma := setup.ColorGen(x, y, setup.BaseColor, c, setup.Conf, setup.Attractors)
-	lightness := setup.ColorGen(x, y, setup.BaseColor, l, setup.Conf, setup.Attractors)
+	hue := setup.ColorGen(x, y, 0, 360, true, h, setup.Conf, setup.Attractors)
+	chroma := setup.ColorGen(x, y, -1, 1, false, c, setup.Conf, setup.Attractors)
+	lightness := setup.ColorGen(x, y, 0, 1, false, l, setup.Conf, setup.Attractors)
 
-	if lightness > 0 && lightness < 128 {
-		lightness += uint8(rand.Intn(int(lightness)))
-	}
-
-	return colorful.Hcl(360 * float64(hue) / 255, (float64(chroma) / 128) -1, float64(lightness)/255.0)
+	return colorful.Hcl(hue, chroma, lightness)
 }
 
 func main() {
-	var r [max_x][max_y]uint8
-	var g [max_x][max_y]uint8
-	var b [max_x][max_y]uint8
+	var r [max_x][max_y]float64
+	var g [max_x][max_y]float64
+	var b [max_x][max_y]float64
 
 	conf := getconf("./conf.json")
 	attractors := genAttractors(conf.Attractors)
@@ -344,35 +377,37 @@ func main() {
 	write_image("test.png", m)
 	fmt.Println("Writing composite")
 	write_image("output/"+filename+".png", m)
-	fmt.Println("Writing red")
-	write_image("output/"+filename+"-red.png", m_r)
-	fmt.Println("Writing green")
-	write_image("output/"+filename+"-green.png", m_g)
-	fmt.Println("Writing blue")
-	write_image("output/"+filename+"-blue.png", m_b)
 
-	fmt.Println("Writing red-green")
-	write_image("output/"+filename+"-red-green.png", m_rg)
-	fmt.Println("Writing red-blue")
-	write_image("output/"+filename+"-red-blue.png", m_rb)
-	fmt.Println("Writing green-blue")
-	write_image("output/"+filename+"-green-blue.png", m_gb)
+	if conf.OutputComponent {
+		fmt.Println("Writing red")
+		write_image("output/"+filename+"-red.png", m_r)
+		fmt.Println("Writing green")
+		write_image("output/"+filename+"-green.png", m_g)
+		fmt.Println("Writing blue")
+		write_image("output/"+filename+"-blue.png", m_b)
+
+		fmt.Println("Writing red-green")
+		write_image("output/"+filename+"-red-green.png", m_rg)
+		fmt.Println("Writing red-blue")
+		write_image("output/"+filename+"-red-blue.png", m_rb)
+		fmt.Println("Writing green-blue")
+		write_image("output/"+filename+"-green-blue.png", m_gb)
+	}
 
 	fmt.Println(filename)
 
 	fmt.Println("done")
 }
 
-func determineColorSpaceFunc(colorSpace string) func (x,y int, r, g, b *[max_x][max_y]uint8, setup util.RgbSetup) colorful.Color {
+func determineColorSpaceFunc(colorSpace string) func (x,y int, r, g, b *[max_x][max_y]float64, setup util.RgbSetup) colorful.Color {
 	if colorSpace == "hcl" {
 		return getHcl
 	}
 	return getRgb
 }
 
-func get_color_gen_func(conf util.Configuration) func(int, int, uint8, *[max_x][max_y]uint8, *util.Configuration, *[]util.Point) uint8 {
-	var color_gen func(int, int, uint8, *[max_x][max_y]uint8, *util.Configuration, *[]util.Point) uint8
-	if (conf.ColorGen == "kite") {
+func get_color_gen_func(conf util.Configuration) (color_gen func(int, int, float64, float64, bool, *[max_x][max_y]float64, *util.Configuration, *[]util.Point) float64) {
+	if conf.ColorGen == "kite" {
 		color_gen = gen_color_kite
 	} else {
 		color_gen = gen_color

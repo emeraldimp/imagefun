@@ -13,7 +13,11 @@ func rcolor(n int) uint8 {
 	return uint8(rand.Intn(n))
 }
 
-func rand_color_walk(color_walk uint8, odds util.Odds) uint8 {
+func rcolorf64(min, max float64) float64 {
+	return min + rand.Float64() / (1/(max-min))
+}
+
+func rand_color_walk(color_walk uint8, odds util.Odds) float64 {
 
 	chance := rand.Intn(99)
 
@@ -28,5 +32,5 @@ func rand_color_walk(color_walk uint8, odds util.Odds) uint8 {
 		return 1
 	}
 
-	return rcolor(int(color_walk))
+	return rcolorf64(0, float64(color_walk))
 }

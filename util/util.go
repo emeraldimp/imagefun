@@ -31,6 +31,7 @@ type Configuration struct {
 	ColorGen string `json:"color_gen"`
 	ColorSpace string `json:"color_space"`
 	ApplyMultiplier bool `json:"apply_multiplier"`
+	OutputComponent bool `json:"output_component"`
 	Walks map[string]string `json:"walks"`
 }
 
@@ -47,7 +48,7 @@ type Walk struct {
 
 type RgbSetup struct {
 	BaseColor  uint8
-	ColorGen   func(int, int, uint8, *[MaxX][MaxY]uint8, *Configuration, *[]Point) uint8
+	ColorGen   func(int, int, float64, float64, bool, *[MaxX][MaxY]float64, *Configuration, *[]Point) float64
 	Conf       *Configuration
 	Attractors *[]Point
 }
