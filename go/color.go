@@ -1,8 +1,8 @@
 package main
 
 import (
+	"./util"
 	"math/rand"
-	"imagefun/util"
 )
 
 func simple_color_walk(color uint8) uint8 {
@@ -14,7 +14,7 @@ func rcolor(n int) uint8 {
 }
 
 func rcolorf64(min, max float64) float64 {
-	return min + rand.Float64() / (1/(max-min))
+	return min + rand.Float64()/(1/(max-min))
 }
 
 func rand_color_walk(color_walk uint8, odds util.Odds) float64 {
